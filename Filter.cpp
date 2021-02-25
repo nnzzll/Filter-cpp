@@ -121,7 +121,33 @@ ndarray *AverageFilter_3d(ndarray *arr, int kernel_size)
                             value += arr->data[k * arr->size[1] * arr->size[2] + (i + di) * arr->size[2] + j + dj];
                             count++;
                         }
-                arr_out->data[k * arr->size[1] * arr->size[2] + i * arr->size[2] + j] = value/count;
+                arr_out->data[k * arr->size[1] * arr->size[2] + i * arr->size[2] + j] = value / count;
+            }
+    return arr_out;
+}
+
+ndarray *AverageFilter3D(ndarray *arr, int kernel_size)
+{
+    ndarray *arr_out;
+    InitArray(arr_out, 3);
+    copyArrayProperty(arr, arr_out);
+    arr_out->data = new double[arr->length];
+    int edge = int(kernel_size / 2);
+    double value;
+    int count = kernel_size * kernel_size * kernel_size;
+    for (int k = 0; k < arr->size[0]; k++)
+        for (int i = 0; i < arr->size[1]; i++)
+            for (int j = 0; j < arr->size[2]; j++)
+            {
+                value = 0;
+                for (int dk = -edge; dk < edge + 1; dk++)
+                    for (int di = -edge; di < edge + 1; di++)
+                        for (int dj = -edge; dj < edge + 1; dj++)
+                            if (((k + dk) >= 0) && ((k + dk) < arr->size[0]) && ((i + di) >= 0) && ((j + dj) >= 0) && ((i + di) < arr->size[1]) && ((j + dj) < arr->size[2]))
+                            {
+                                value += arr->data[(k + dk) * arr->size[1] * arr->size[2] + (i + di) * arr->size[2] + j + dj];
+                            }
+                arr_out->data[k * arr->size[1] * arr->size[2] + i * arr->size[2] + j] = value / count;
             }
     return arr_out;
 }
@@ -178,6 +204,23 @@ extern "C" __declspec(dllexport) void AverageFilter(double *arr_input, double *a
     arr->data = arr_input;
 
     ndarray *filtered = AverageFilter_3d(arr, kernel_size);
+    for (int i = 0; i < arr->length; i++)
+        arr_output[i] = filtered->data[i];
+    arr->data = NULL;
+    arr->size = NULL;
+    FreeArray(arr);
+    FreeArray(filtered);
+}
+
+extern "C" __declspec(dllexport) void Average3D(double *arr_input, double *arr_output, int *size, int kernel_size)
+{
+    ndarray *arr;
+    InitArray(arr, 3);
+    arr->size = size;
+    arr->length = arr->size[0] * arr->size[1] * arr->size[2];
+    arr->data = arr_input;
+
+    ndarray *filtered = AverageFilter3D(arr, kernel_size);
     for (int i = 0; i < arr->length; i++)
         arr_output[i] = filtered->data[i];
     arr->data = NULL;
